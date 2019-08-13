@@ -4,6 +4,16 @@ const tours = JSON.parse(
   fs.readFileSync(`${__dirname}/../dev-data/data/tours-simple.json`)
 );
 
+exports.checkBody = (req, res, next) => {
+  if (!req.body.name || !req.body.price) {
+    return res.status(400).json({
+      status: 'failed',
+      message: 'Missing name or price'
+    });
+  }
+  next();
+};
+
 exports.checkId = (req, res, next, val) => {
   console.log(`this is the ${val}`);
 

@@ -1,9 +1,12 @@
+/* eslint-disable no-console */
 const mongoose = require('mongoose');
 
 const tourSchema = new mongoose.Schema({
   name: {
     type: String,
-    required: [true, 'A tour name is required.']
+    required: [true, 'A tour name is required.'],
+    unique: true,
+    dropDups: true
   },
   rating: {
     type: Number,

@@ -1,17 +1,8 @@
 const Tour = require('./../models/tourModels');
 
-// exports.checkBody = (req, res, next) => {
-//   if (!req.body.name || !req.body.price) {
-//     return res.status(400).json({
-//       status: 'failed',
-//       message: 'Missing name or price'
-//     });
-//   }
-//   next();
-// };
-
 exports.getAllTours = async (req, res) => {
   try {
+    // Filtering
     const queryObj = { ...req.query };
     const excluded = ['page', 'sort', 'limit', 'fields'];
 
@@ -23,8 +14,38 @@ exports.getAllTours = async (req, res) => {
 
     queryStr = queryStr.replace(/\b(gte|lte|lt|gt)\b/g, match => `$${match}`);
 
-    const query = Tour.find(JSON.parse(queryStr));
+    let query = Tour.find(JSON.parse(queryStr));
 
+    // Sorting
+    if (req.query.sort) {
+      const sortBy = req.query.sort.split(',').join(' ');
+      query = query.sort(sortBy);
+    } else {
+      query = query.sort('-createdAt');
+    }
+
+    // Field limiting
+    if (req.query.fields) {
+      const fields = req.query.fields.split(',').join(' ');
+      query = query.select(fields);
+    } else {
+      query = query.select('-__v');
+    }
+
+    // Pagination
+    const page = req.query.page * 1 || 1;
+    const limit = req.query.limit * 1 || 100;
+    const skip = (page - 1) * limit;
+
+    query = query.skip(skip).limit(limit);
+
+    if (req.query.page) {
+      const numTours = await Tour.countDocuments();
+
+      if (skip >= numTours) throw new Error("This page doesn't exist");
+    }
+
+    // Query Execution
     const tours = await query;
     res.status(200).json({
       status: 'success',
@@ -36,7 +57,7 @@ exports.getAllTours = async (req, res) => {
   } catch (err) {
     res.status(400).json({
       status: 'fail',
-      message: err
+      message: err.message
     });
   }
 };
